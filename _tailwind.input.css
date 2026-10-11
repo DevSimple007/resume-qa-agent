@@ -1,0 +1,24 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer components {
+  /* 简历区块标题 */
+  .section-title {
+    @apply text-xs font-bold uppercase tracking-wider text-zinc-900 mb-3 pb-1 border-b border-zinc-100;
+  }
+  /* 技能标签 */
+  .skill-chip {
+    @apply text-xs px-2.5 py-0.5 rounded border border-zinc-200/80 text-zinc-700 font-medium bg-transparent;
+  }
+  /* 常见问题按钮 */
+  .topic-chip {
+    @apply px-2.5 py-1 rounded-md text-[11px] bg-transparent border border-zinc-200/80 text-zinc-600 transition;
+  }
+  .topic-chip:hover {
+    @apply bg-zinc-50 border-zinc-400 text-zinc-900;
+  }
+  .topic-chip:active {
+    transform: scale(0.98);
+  }
+}

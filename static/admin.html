@@ -1,0 +1,550 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta content="width=device-width, initial-scale=1.0" name="viewport">
+<title>管理后台 · 简历与数字分身</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🛠️</text></svg>">
+<link rel="stylesheet" href="/static/vendor/tailwind.css">
+<style>
+  body {
+    background-color: #f8f9fa;
+    color: #1d1d1f;
+    -webkit-font-smoothing: antialiased;
+  }
+  ::-webkit-scrollbar { width: 6px; height: 6px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: #d4d4d8; border-radius: 10px; }
+  ::-webkit-scrollbar-thumb:hover { background: #a1a1aa; }
+  input, textarea { outline: none; }
+  .field-input {
+    width: 100%; font-size: 12px; color: #27272a; background: #fff;
+    border: 1px solid #e4e4e7; border-radius: 8px; padding: 7px 10px;
+    transition: border-color .15s, box-shadow .15s; line-height: 1.6;
+  }
+  .field-input:focus { border-color: #18181b; }
+  .field-input::placeholder { color: #a1a1aa; }
+  .field-label { font-size: 11px; color: #52525b; font-weight: 500; margin-bottom: 4px; display: block; }
+  .field-hint { font-size: 10px; color: #a1a1aa; margin-top: 3px; }
+  .nav-item {
+    display: block; width: 100%; text-align: left; font-size: 12px;
+    padding: 7px 12px; border-radius: 8px; color: #52525b; cursor: pointer;
+    transition: all .15s; border: 1px solid transparent;
+  }
+  .nav-item:hover { background: #f4f4f5; color: #18181b; }
+  .nav-item.active { background: #18181b; color: #fff; font-weight: 500; }
+</style>
+</head>
+<body class="min-h-screen font-sans">
+
+<!-- ==================== 登录视图 ==================== -->
+<div id="loginView" class="min-h-screen flex items-center justify-center px-4 hidden">
+  <div class="w-full max-w-sm">
+    <div class="text-center mb-6">
+      <div class="w-10 h-10 rounded-xl bg-zinc-900 text-white flex items-center justify-center font-medium mx-auto mb-3">管</div>
+      <h1 class="text-lg font-bold tracking-tight text-zinc-900">管理后台</h1>
+      <p class="text-xs text-zinc-400 mt-1">简历与数字分身 · 内容管理</p>
+    </div>
+    <div class="bg-white rounded-xl border border-zinc-200/90 shadow-paper p-6">
+      <label class="field-label" for="loginPassword">管理密码</label>
+      <input id="loginPassword" type="password" class="field-input" placeholder="请输入管理密码" onkeydown="if(event.key==='Enter')doLogin()">
+      <p id="loginError" class="text-[11px] text-red-600 mt-2 hidden"></p>
+      <button id="loginBtn" class="w-full mt-4 text-xs font-medium text-white bg-zinc-900 hover:bg-zinc-800 active:scale-[0.99] py-2.5 rounded-lg transition-all" onclick="doLogin()">登录</button>
+      <p class="text-[10px] text-zinc-400 mt-3 leading-relaxed">密码在服务端 <span class="font-mono">.env</span> 的 <span class="font-mono">ADMIN_PASSWORD</span> 中配置；忘记密码可修改后重启服务。</p>
+    </div>
+  </div>
+</div>
+
+<!-- ==================== 主视图 ==================== -->
+<div id="mainView" class="min-h-screen flex flex-col hidden">
+
+  <!-- 顶栏 -->
+  <header class="bg-white/90 backdrop-blur border-b border-zinc-200/70 sticky top-0 z-40">
+    <div class="max-w-screen-2xl mx-auto px-4 sm:px-6 h-14 flex items-center justify-between">
+      <div class="flex items-center gap-2.5">
+        <div class="w-7 h-7 rounded-md bg-zinc-900 text-white flex items-center justify-center font-medium text-[11px]">管</div>
+        <div class="flex items-center gap-2">
+          <span class="text-sm font-semibold tracking-tight text-zinc-900">内容管理</span>
+          <span class="text-xs text-zinc-400 font-normal hidden sm:inline">/ 简历 · 知识库 · 页面设置</span>
+        </div>
+      </div>
+      <div class="flex items-center gap-2 sm:gap-3">
+        <span id="dirtyBadge" class="hidden text-[11px] text-amber-600 bg-amber-50 border border-amber-200/80 px-2 py-1 rounded-md">● 有未保存修改</span>
+        <a href="/" target="_blank" class="text-xs font-medium text-zinc-700 hover:text-zinc-900 bg-zinc-100 hover:bg-zinc-200 border border-zinc-200/60 px-3 py-1.5 rounded-md transition-all flex items-center gap-1.5">
+          <svg class="w-3.5 h-3.5 text-zinc-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" stroke-width="2"></path><path d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" stroke-width="2"></path></svg>
+          查看主页
+        </a>
+        <button class="text-xs text-zinc-400 hover:text-zinc-700 transition" onclick="doLogout()">退出登录</button>
+      </div>
+    </div>
+  </header>
+
+  <!-- 主体 -->
+  <div class="flex-1 max-w-screen-2xl w-full mx-auto px-4 sm:px-6 py-6 flex flex-col lg:flex-row gap-6 w-full">
+
+    <!-- 左侧导航 -->
+    <aside class="lg:w-44 shrink-0">
+      <div class="lg:sticky lg:top-20 space-y-1" id="navList"></div>
+    </aside>
+
+    <!-- 表单区 -->
+    <main class="flex-1 min-w-0">
+      <div class="max-w-3xl">
+        <div id="sectionHost"></div>
+      </div>
+    </main>
+  </div>
+
+  <!-- 底部保存栏 -->
+  <div class="sticky bottom-0 z-40 bg-white/95 backdrop-blur border-t border-zinc-200/80">
+    <div class="max-w-screen-2xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between gap-3">
+      <p class="text-[11px] text-zinc-400 leading-snug hidden sm:block">保存后自动重建 AI 向量库并刷新主页数据，无需重启服务</p>
+      <div class="flex items-center gap-2 shrink-0">
+        <button class="text-xs font-medium text-zinc-600 hover:text-zinc-900 bg-zinc-100 hover:bg-zinc-200 border border-zinc-200/60 px-3 py-2 rounded-md transition-all" onclick="reloadData()">放弃修改并重新加载</button>
+        <button id="saveBtn" class="text-xs font-medium text-white bg-zinc-900 hover:bg-zinc-800 active:scale-[0.99] px-5 py-2 rounded-md transition-all disabled:opacity-40" onclick="doSave()">保存并生效</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- 提示气泡 -->
+<div id="toast" class="fixed bottom-20 left-1/2 -translate-x-1/2 z-50 hidden">
+  <div class="bg-zinc-900 text-white text-xs px-4 py-2.5 rounded-lg shadow-float flex items-center gap-2 max-w-[90vw]">
+    <span id="toastText"></span>
+  </div>
+</div>
+
+<script>
+/* ==================== 全局状态 ==================== */
+let state = { knowledge: {}, site: {} };
+let dirty = false;
+let activeSection = 'basic';
+
+const SECTION_DEFS = [
+  { key: 'basic',      label: '基础信息' },
+  { key: 'intention',  label: '求职意向' },
+  { key: 'education',  label: '教育背景' },
+  { key: 'skills',     label: '技能与证书' },
+  { key: 'projects',   label: '项目经历' },
+  { key: 'internships',label: '实习经历' },
+  { key: 'extra',      label: '实训与竞赛' },
+  { key: 'misc',       label: '自我描述' },
+  { key: 'site',       label: '页面设置' },
+];
+
+/* ==================== 通用工具 ==================== */
+function el(tag, cls, text) {
+  const e = document.createElement(tag);
+  if (cls) e.className = cls;
+  if (text != null) e.textContent = text;
+  return e;
+}
+function markDirty() {
+  if (!dirty) {
+    dirty = true;
+    document.getElementById('dirtyBadge').classList.remove('hidden');
+  }
+}
+function toast(msg, isError) {
+  const t = document.getElementById('toast');
+  document.getElementById('toastText').textContent = msg;
+  t.querySelector('span').style.color = isError ? '#fca5a5' : '#fff';
+  t.classList.remove('hidden');
+  clearTimeout(toast._timer);
+  toast._timer = setTimeout(() => t.classList.add('hidden'), 3200);
+}
+
+/* 输入控件工厂 */
+function fieldText(label, getter, setter, hint, placeholder) {
+  const wrap = el('div');
+  wrap.appendChild(el('label', 'field-label', label));
+  const input = el('input', 'field-input');
+  input.type = 'text';
+  input.value = getter() == null ? '' : String(getter());
+  if (placeholder) input.placeholder = placeholder;
+  input.addEventListener('input', () => { setter(input.value); markDirty(); });
+  wrap.appendChild(input);
+  if (hint) wrap.appendChild(el('p', 'field-hint', hint));
+  return wrap;
+}
+function fieldTextarea(label, getter, setter, rows, hint) {
+  const wrap = el('div');
+  wrap.appendChild(el('label', 'field-label', label));
+  const ta = el('textarea', 'field-input');
+  ta.rows = rows || 3;
+  ta.value = getter() == null ? '' : String(getter());
+  ta.addEventListener('input', () => { setter(ta.value); markDirty(); });
+  wrap.appendChild(ta);
+  if (hint) wrap.appendChild(el('p', 'field-hint', hint));
+  return wrap;
+}
+/* 一行一项的列表编辑（数组） */
+function fieldList(label, getter, setter, hint) {
+  const toText = v => Array.isArray(v) ? v.join('\n') : '';
+  const wrap = fieldTextarea(label, () => toText(getter()), (v) => setter(v.split('\n').map(s => s.trim()).filter(Boolean)), 4, hint || '一行一项；若写成「标签：内容」，主页会自动把标签加粗');
+  return wrap;
+}
+
+function card(children, title) {
+  const c = el('div', 'bg-white rounded-xl border border-zinc-200/90 shadow-paper p-5 mb-5');
+  if (title) {
+    const head = el('div', 'flex items-center justify-between mb-4');
+    head.appendChild(el('h3', 'text-xs font-bold tracking-wide text-zinc-900', title));
+    if (children._extraHead) head.appendChild(children._extraHead);
+    c.appendChild(head);
+  }
+  children.forEach(ch => c.appendChild(ch));
+  return c;
+}
+function grid2() { return el('div', 'grid grid-cols-1 sm:grid-cols-2 gap-3'); }
+
+/* 可重复分组（数组对象） */
+function repeatGroup(opts) {
+  const host = el('div');
+  const arrRef = opts.getArr;
+  const render = () => {
+    host.innerHTML = '';
+    const list = arrRef();
+    if (!list.length) {
+      host.appendChild(el('p', 'text-[11px] text-zinc-400 mb-3', opts.emptyText || '暂无条目，点击下方按钮添加'));
+    }
+    list.forEach((item, idx) => {
+      const c = el('div', 'border border-zinc-200/90 rounded-xl p-4 mb-3 bg-zinc-50/40');
+      const head = el('div', 'flex items-center justify-between mb-3');
+      head.appendChild(el('span', 'text-[11px] font-semibold text-zinc-700', (opts.itemTitle ? opts.itemTitle(item, idx) : '') || ('第 ' + (idx + 1) + ' 条')));
+      const del = el('button', 'text-[11px] text-zinc-400 hover:text-red-600 transition', '删除');
+      del.addEventListener('click', () => {
+        if (!confirm('确定删除这一条吗？')) return;
+        list.splice(idx, 1);
+        markDirty();
+        render();
+      });
+      head.appendChild(del);
+      c.appendChild(head);
+      const body = el('div', 'space-y-3');
+      opts.buildFields(item, body);
+      c.appendChild(body);
+      host.appendChild(c);
+    });
+    const add = el('button', 'text-xs font-medium text-zinc-700 bg-white hover:bg-zinc-100 border border-dashed border-zinc-300 hover:border-zinc-400 px-4 py-2 rounded-lg transition-all', '＋ ' + (opts.addText || '添加一条'));
+    add.addEventListener('click', () => {
+      arrRef().push(JSON.parse(JSON.stringify(opts.newItem || {})));
+      markDirty();
+      render();
+    });
+    host.appendChild(add);
+  };
+  render();
+  return host;
+}
+
+/* ==================== 各版块渲染 ==================== */
+function bindBasic(b, host) {
+  const g1 = grid2();
+  g1.appendChild(fieldText('姓名', () => b.name, v => b.name = v));
+  g1.appendChild(fieldText('性别', () => b.gender, v => b.gender = v));
+  g1.appendChild(fieldText('年龄', () => b.age, v => b.age = v));
+  g1.appendChild(fieldText('所在城市', () => b.location, v => b.location = v));
+  const g2 = grid2();
+  g2.appendChild(fieldText('联系邮箱（会展示在简历和「联系我」按钮）', () => b.email, v => b.email = v));
+  g2.appendChild(fieldText('手机号（不会对外展示，AI 问答也会避免透露）', () => b.phone, v => b.phone = v));
+  host.appendChild(card([
+    g1, g2,
+    fieldList('GitHub 仓库链接（一行一个，前台点击在新窗口打开；留空则不显示）', () => b.github_repos, v => b.github_repos = v, '直接粘贴链接即可；想自定义显示名称写成「名称 | 链接」，如：云邮箱系统 | https://github.com/xxx/cloud-mail')
+  ], '基础信息'));
+}
+
+function bindIntention(b, host) {
+  const it = b.job_intention || (b.job_intention = {});
+  const g = grid2();
+  g.appendChild(fieldText('期望薪资', () => it.expected_salary, v => it.expected_salary = v, null, '如：6-9K'));
+  g.appendChild(fieldText('期望城市', () => it.expected_city, v => it.expected_city = v, null, '如：长沙'));
+  g.appendChild(fieldText('到岗时间', () => it.available_time, v => it.available_time = v, null, '如：随时到岗'));
+  const positions = fieldList('目标岗位', () => it.target_positions, v => it.target_positions = v, '一行一个岗位');
+  host.appendChild(card([positions, g], '求职意向'));
+}
+
+function bindEducation(b, host) {
+  host.appendChild(card([repeatGroup({
+    getArr: () => (Array.isArray(b.education) ? b.education : (b.education = [])),
+    itemTitle: e => e.school || '教育经历',
+    addText: '添加教育经历',
+    emptyText: '暂未填写教育经历',
+    buildFields: (e, body) => {
+      const g1 = grid2();
+      g1.appendChild(fieldText('学校', () => e.school, v => e.school = v));
+      g1.appendChild(fieldText('专业', () => e.major, v => e.major = v));
+      g1.appendChild(fieldText('学历', () => e.degree, v => e.degree = v, null, '如：大专 / 本科'));
+      g1.appendChild(fieldText('成绩排名（可选）', () => e.gpa, v => e.gpa = v, null, '如：排名前10%'));
+      const g2 = grid2();
+      g2.appendChild(fieldText('开始时间', () => e.start_time, v => e.start_time = v, null, '如：2024.09'));
+      g2.appendChild(fieldText('结束时间', () => e.end_time, v => e.end_time = v, null, '如：2027.06'));
+      body.appendChild(g1); body.appendChild(g2);
+      body.appendChild(fieldList('主修课程（一行一门）', () => e.courses, v => e.courses = v));
+      body.appendChild(fieldTextarea('补充说明（可选）', () => e.extras, v => e.extras = v, 2));
+    }
+  })], '教育背景'));
+}
+
+function bindSkills(b, host) {
+  host.appendChild(card([
+    fieldList('专业技能（一行一项，每项在主页显示为一个标签块）', () => b.skills, v => b.skills = v, '示例：编程语言：Python（熟练）、Java'),
+    fieldList('证书资质（一行一个）', () => b.certificates, v => b.certificates = v),
+  ], '技能与证书'));
+}
+
+function bindProjects(k, host) {
+  host.appendChild(card([repeatGroup({
+    getArr: () => (Array.isArray(k.projects) ? k.projects : (k.projects = [])),
+    itemTitle: p => p.name || '项目',
+    addText: '添加项目',
+    emptyText: '暂无项目',
+    buildFields: (p, body) => {
+      const g1 = grid2();
+      g1.appendChild(fieldText('项目名称', () => p.name, v => p.name = v));
+      g1.appendChild(fieldText('角色（显示在名称后面）', () => p.role, v => p.role = v, null, '如：全栈开发（独立完成）'));
+      g1.appendChild(fieldText('项目时间', () => p.time, v => p.time = v, null, '如：2025.09 - 2026.05'));
+      body.appendChild(g1);
+      body.appendChild(fieldTextarea('项目背景/简介', () => p.background, v => p.background = v, 3));
+      body.appendChild(fieldList('技术栈（一行一项）', () => p.tech_stack, v => p.tech_stack = v));
+      body.appendChild(fieldList('核心职责与亮点（一行一项）', () => p.responsibilities, v => p.responsibilities = v));
+      body.appendChild(fieldList('难点（一行一项，可选）', () => p.challenges, v => p.challenges = v));
+      body.appendChild(fieldList('优化成果（一行一项，可选）', () => p.optimizations, v => p.optimizations = v));
+      body.appendChild(fieldTextarea('代码亮点（可选，主要供 AI 问答使用）', () => p.code_highlights, v => p.code_highlights = v, 2));
+    }
+  })], '项目经历'));
+}
+
+function bindInternships(k, host) {
+  host.appendChild(card([repeatGroup({
+    getArr: () => (Array.isArray(k.internships) ? k.internships : (k.internships = [])),
+    itemTitle: it => it.company || '实习',
+    addText: '添加实习经历',
+    emptyText: '暂无实习经历',
+    buildFields: (it, body) => {
+      const g1 = grid2();
+      g1.appendChild(fieldText('公司名称', () => it.company, v => it.company = v));
+      g1.appendChild(fieldText('岗位', () => it.position, v => it.position = v));
+      g1.appendChild(fieldText('开始时间', () => it.start_time, v => it.start_time = v, null, '如：2025.07'));
+      g1.appendChild(fieldText('结束时间', () => it.end_time, v => it.end_time = v, null, '如：2025.09'));
+      body.appendChild(g1);
+      body.appendChild(fieldList('工作内容（一行一项）', () => it.responsibilities, v => it.responsibilities = v));
+      body.appendChild(fieldList('成果（一行一项，可选）', () => it.achievements, v => it.achievements = v));
+    }
+  })], '实习经历'));
+}
+
+function bindExtra(k, host) {
+  host.appendChild(card([repeatGroup({
+    getArr: () => (Array.isArray(k.training) ? k.training : (k.training = [])),
+    itemTitle: t => t.name || '实训',
+    addText: '添加实训/培训',
+    emptyText: '暂无实训经历',
+    buildFields: (t, body) => {
+      const g = grid2();
+      g.appendChild(fieldText('名称', () => t.name, v => t.name = v));
+      g.appendChild(fieldText('机构', () => t.institution, v => t.institution = v));
+      g.appendChild(fieldText('时间', () => t.time, v => t.time = v));
+      body.appendChild(g);
+      body.appendChild(fieldTextarea('内容', () => t.content, v => t.content = v, 2));
+      body.appendChild(fieldText('成果（可选）', () => t.achievement, v => t.achievement = v));
+    }
+  })], '实训 / 培训经历'));
+
+  host.appendChild(card([repeatGroup({
+    getArr: () => (Array.isArray(k.competitions) ? k.competitions : (k.competitions = [])),
+    itemTitle: c => c.name || '竞赛',
+    addText: '添加竞赛获奖',
+    emptyText: '暂无竞赛经历',
+    buildFields: (c, body) => {
+      const g = grid2();
+      g.appendChild(fieldText('竞赛名称', () => c.name, v => c.name = v));
+      g.appendChild(fieldText('时间', () => c.time, v => c.time = v));
+      g.appendChild(fieldText('级别', () => c.level, v => c.level = v, null, '如：省级 / 校级'));
+      g.appendChild(fieldText('获奖情况', () => c.award, v => c.award = v));
+      body.appendChild(g);
+      body.appendChild(fieldTextarea('项目简介', () => c.description, v => c.description = v, 2));
+    }
+  })], '竞赛经历'));
+}
+
+function bindMisc(k, host) {
+  host.appendChild(card([
+    fieldTextarea('自我介绍（显示在简历开头）', () => k.self_introduction, v => k.self_introduction = v, 3),
+    fieldTextarea('自我评价（主要供 AI 问答使用）', () => k.self_evaluation, v => k.self_evaluation = v, 4),
+    fieldList('擅长解决的技术问题（一行一项）', () => k.technical_strengths, v => k.technical_strengths = v),
+  ], '自我描述'));
+}
+
+function bindSite(s, host) {
+  const g = grid2();
+  g.appendChild(fieldText('页面标题（浏览器标签页，支持 {name} 占位符）', () => s.page_title, v => s.page_title = v));
+  g.appendChild(fieldText('顶栏徽标文字（备用：Logo 图片加载失败时才显示）', () => s.header_badge, v => s.header_badge = v));
+  g.appendChild(fieldText('顶栏姓名', () => s.header_name, v => s.header_name = v));
+  g.appendChild(fieldText('顶栏副标题', () => s.header_subtitle, v => s.header_subtitle = v));
+  g.appendChild(fieldText('AI 头像字符（问答区，1~2 字）', () => s.owner_avatar, v => s.owner_avatar = v));
+  g.appendChild(fieldText('访客头像字符（问答区，1~2 字）', () => s.visitor_avatar, v => s.visitor_avatar = v));
+  g.appendChild(fieldText('简历区标题行', () => s.resume_title_row, v => s.resume_title_row = v));
+  g.appendChild(fieldText('简历区状态文字', () => s.status_text, v => s.status_text = v));
+  g.appendChild(fieldText('问答区标题行', () => s.agent_title_row, v => s.agent_title_row = v));
+  g.appendChild(fieldText('问答区副标题', () => s.agent_subtitle, v => s.agent_subtitle = v));
+  host.appendChild(card([g], '页面文字与头像'));
+
+  const g2 = grid2();
+  g2.appendChild(fieldText('欢迎语标题', () => s.welcome_title, v => s.welcome_title = v));
+  g2.appendChild(fieldText('输入框提示文字', () => s.chat_placeholder, v => s.chat_placeholder = v));
+  host.appendChild(card([
+    fieldTextarea('欢迎语内容（支持 {name} 占位符会自动替换为姓名）', () => s.welcome_text, v => s.welcome_text = v, 3),
+    fieldList('常见问题建议（一行一个，最多显示 6 个）', () => s.quick_questions, v => s.quick_questions = v),
+    fieldText('页脚文字（支持 {name} 占位符）', () => s.footer_text, v => s.footer_text = v),
+  ], '问答区欢迎语'));
+}
+
+/* ==================== 导航与渲染 ==================== */
+function renderNav() {
+  const nav = document.getElementById('navList');
+  nav.innerHTML = '';
+  SECTION_DEFS.forEach(def => {
+    const btn = el('button', 'nav-item' + (def.key === activeSection ? ' active' : ''), def.label);
+    btn.addEventListener('click', () => { activeSection = def.key; renderNav(); renderSection(); });
+    nav.appendChild(btn);
+  });
+}
+
+function renderSection() {
+  const host = document.getElementById('sectionHost');
+  host.innerHTML = '';
+  const k = state.knowledge;
+  const b = k.basic_info || (k.basic_info = {});
+  const s = state.site;
+  switch (activeSection) {
+    case 'basic': bindBasic(b, host); break;
+    case 'intention': bindIntention(b, host); break;
+    case 'education': bindEducation(b, host); break;
+    case 'skills': bindSkills(b, host); break;
+    case 'projects': bindProjects(k, host); break;
+    case 'internships': bindInternships(k, host); break;
+    case 'extra': bindExtra(k, host); break;
+    case 'misc': bindMisc(k, host); break;
+    case 'site': bindSite(s, host); break;
+  }
+  window.scrollTo({ top: 0 });
+}
+
+/* ==================== 登录 / 数据加载 / 保存 ==================== */
+function showLogin() {
+  document.getElementById('loginView').classList.remove('hidden');
+  document.getElementById('mainView').classList.add('hidden');
+  document.getElementById('loginPassword').focus();
+}
+function showMain() {
+  document.getElementById('loginView').classList.add('hidden');
+  document.getElementById('mainView').classList.remove('hidden');
+}
+
+async function doLogin() {
+  const input = document.getElementById('loginPassword');
+  const errEl = document.getElementById('loginError');
+  const btn = document.getElementById('loginBtn');
+  errEl.classList.add('hidden');
+  btn.disabled = true;
+  btn.textContent = '登录中...';
+  try {
+    const res = await fetch('/admin/login', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ password: input.value })
+    });
+    const j = await res.json().catch(() => ({}));
+    if (!res.ok) throw new Error(j.detail || '登录失败');
+    input.value = '';
+    await enterMain();
+  } catch (e) {
+    errEl.textContent = e.message || '登录失败';
+    errEl.classList.remove('hidden');
+  } finally {
+    btn.disabled = false;
+    btn.textContent = '登录';
+  }
+}
+
+async function doLogout() {
+  try { await fetch('/admin/logout', { method: 'POST' }); } catch (e) {}
+  showLogin();
+}
+
+async function enterMain() {
+  await loadData();
+  showMain();
+}
+
+async function loadData() {
+  const res = await fetch('/admin/api/data');
+  if (res.status === 401) { showLogin(); throw new Error('未登录'); }
+  const j = await res.json().catch(() => ({}));
+  if (!res.ok) throw new Error(j.detail || '数据加载失败');
+  state = { knowledge: j.knowledge || {}, site: j.site || {} };
+  dirty = false;
+  document.getElementById('dirtyBadge').classList.add('hidden');
+  renderNav();
+  renderSection();
+}
+
+async function reloadData() {
+  if (dirty && !confirm('将放弃当前未保存的修改，确定吗？')) return;
+  try {
+    await loadData();
+    toast('已重新加载');
+  } catch (e) { toast(e.message || '加载失败', true); }
+}
+
+async function doSave() {
+  const btn = document.getElementById('saveBtn');
+  btn.disabled = true;
+  btn.textContent = '保存中...';
+  try {
+    const res = await fetch('/admin/api/save', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(state)
+    });
+    if (res.status === 401) { showLogin(); throw new Error('登录已过期，请重新登录'); }
+    const j = await res.json().catch(() => ({}));
+    if (!res.ok) throw new Error(j.detail || '保存失败');
+    if (j.status === 'warning') {
+      toast(j.message || '已保存，但重建出现问题', true);
+      dirty = true;
+    } else {
+      dirty = false;
+      document.getElementById('dirtyBadge').classList.add('hidden');
+      toast('保存成功：主页与 AI 知识库已更新');
+    }
+  } catch (e) {
+    toast(e.message || '保存失败', true);
+  } finally {
+    btn.disabled = false;
+    btn.textContent = '保存并生效';
+  }
+}
+
+/* 未保存离开提醒 */
+window.addEventListener('beforeunload', e => {
+  if (dirty) { e.preventDefault(); e.returnValue = ''; }
+});
+
+/* ==================== 初始化 ==================== */
+(async function init() {
+  try {
+    const res = await fetch('/admin/check');
+    if (res.ok) {
+      await enterMain();
+    } else {
+      showLogin();
+    }
+  } catch (e) {
+    showLogin();
+  }
+})();
+</script>
+</body>
+</html>

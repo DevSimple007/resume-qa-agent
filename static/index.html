@@ -1,0 +1,744 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta content="width=device-width, initial-scale=1.0" name="viewport">
+<title>个人履历与经历问答 | Digital Avatar</title>
+<link id="favicon" rel="icon" type="image/svg+xml" sizes="any" href="/static/vendor/logo.svg">
+<!-- 样式表：通过服务访问（http）使用绝对路径；直接双击本地打开（file://）时自动切换为相对路径 -->
+<link id="tailwind-css" rel="stylesheet" href="/static/vendor/tailwind.css"
+      onerror="if(!this.dataset.retried){this.dataset.retried='1';this.href='vendor/tailwind.css';}">
+<script>
+  if (location.protocol === 'file:') {
+    document.getElementById('tailwind-css').href = 'vendor/tailwind.css';
+    var _fav = document.getElementById('favicon');
+    if (_fav) _fav.href = 'vendor/logo.svg';
+  }
+</script>
+<!-- 数据文件（由后端生成；http 用绝对路径，file:// 用相对路径） -->
+<script>
+  document.write('<script src="' + (location.protocol === 'file:' ? 'resume_data.js' : '/static/resume_data.js') + '"><\/script>');
+</script>
+<style>
+  body {
+    background-color: #f8f9fa;
+    color: #1d1d1f;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+  /* 细滚动条 */
+  ::-webkit-scrollbar { width: 5px; height: 5px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: #d4d4d8; border-radius: 10px; }
+  ::-webkit-scrollbar-thumb:hover { background: #a1a1aa; }
+  /* 消息淡入 */
+  .chat-msg { animation: msgIn .25s ease; }
+  @keyframes msgIn { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: none; } }
+  /* 打字光标 */
+  .type-cursor {
+    display: inline-block; width: 2px; height: 1em; background: #18181b;
+    vertical-align: text-bottom; margin-left: 1px; animation: blink .9s steps(1) infinite;
+  }
+  @keyframes blink { 50% { opacity: 0; } }
+  /* 加载小点 */
+  .loading-dots span {
+    width: 5px; height: 5px; background: #a1a1aa; border-radius: 50%;
+    display: inline-block; animation: dotBounce 1.4s infinite ease-in-out both;
+  }
+  .loading-dots span:nth-child(1) { animation-delay: -.32s; }
+  .loading-dots span:nth-child(2) { animation-delay: -.16s; }
+  @keyframes dotBounce { 0%, 80%, 100% { transform: scale(0); } 40% { transform: scale(1); } }
+  textarea { resize: none; }
+  .error-note { color: #b42318 !important; }
+  /* 打印：只保留简历纸张 */
+  @media print {
+    body { background: #fff !important; }
+    header, footer, #agentSection, #statusBar, #toast { display: none !important; }
+    main { padding: 0 !important; max-width: none !important; }
+    #resumeCard {
+      max-height: none !important; overflow: visible !important;
+      border: none !important; box-shadow: none !important;
+      border-radius: 0 !important; padding: 0 !important;
+    }
+  }
+  @page { margin: 14mm 16mm; }
+</style>
+</head>
+<body class="min-h-screen font-sans flex flex-col">
+
+<!-- 提示气泡 -->
+<div id="toast" class="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 hidden">
+  <div class="bg-zinc-900 text-white text-xs px-4 py-2.5 rounded-lg shadow-float flex items-center gap-2">
+    <svg class="w-3.5 h-3.5 text-emerald-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path d="M5 13l4 4L19 7" stroke-linecap="round" stroke-linejoin="round" stroke-width="2.2"></path>
+    </svg>
+    <span id="toastText"></span>
+  </div>
+</div>
+
+<!-- ==================== 顶栏 ==================== -->
+<header class="bg-white/90 backdrop-blur border-b border-zinc-200/70 sticky top-0 z-40">
+  <div class="max-w-screen-2xl mx-auto px-4 sm:px-6 h-14 flex items-center justify-between">
+    <div class="flex items-center gap-2.5">
+      <img id="brandLogo" width="36" height="36" alt="" class="w-9 h-9 object-contain shrink-0" onerror="logoFallback()">
+      <div id="brandBadge" class="w-7 h-7 rounded-md bg-zinc-900 text-white hidden items-center justify-center font-medium text-[10px] font-mono tracking-tight">HDW</div>
+      <div class="flex items-center gap-2">
+        <span id="brandName" class="text-sm font-semibold tracking-tight text-zinc-900">胡大为</span>
+        <span class="text-xs text-zinc-400 font-normal">/</span>
+        <span id="brandSubtitle" class="text-xs text-zinc-500 font-medium hidden sm:inline">个人履历与经历问答</span>
+      </div>
+    </div>
+    <div class="flex items-center gap-2 sm:gap-3">
+      <div class="inline-flex items-center gap-1.5 text-xs mr-1 sm:mr-2" id="layoutTabs">
+        <button id="btn-single-col" class="text-xs text-zinc-900 font-medium transition" onclick="switchLayoutMode('single')">单栏</button>
+        <span class="text-zinc-300 font-normal">/</span>
+        <button id="btn-double-col" class="text-xs text-zinc-400 hover:text-zinc-700 transition font-normal" onclick="switchLayoutMode('double')">双栏</button>
+      </div>
+      <div class="h-3.5 w-[1px] bg-zinc-200 hidden sm:block mr-1"></div>
+      <button class="text-xs font-medium text-zinc-700 hover:text-zinc-900 bg-zinc-100 hover:bg-zinc-200 border border-zinc-200/60 active:scale-[0.98] px-3 py-1.5 rounded-md transition-all flex items-center gap-1.5" onclick="exportPDF()">
+        <svg class="w-3.5 h-3.5 text-zinc-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"></path>
+        </svg>导出 PDF
+      </button>
+      <button class="text-xs font-medium text-zinc-700 hover:text-zinc-900 bg-zinc-100 hover:bg-zinc-200 border border-zinc-200/60 active:scale-[0.98] px-3 py-1.5 rounded-md transition-all flex items-center gap-1.5" onclick="copyContact()">
+        <svg class="w-3.5 h-3.5 text-zinc-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"></path>
+        </svg>联系我
+      </button>
+    </div>
+  </div>
+</header>
+
+<!-- ==================== 主体 ==================== -->
+<main class="max-w-screen-2xl w-full mx-auto px-4 sm:px-6 py-8 flex-1 flex flex-col">
+  <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 lg:flex-1">
+
+    <!-- ============ 左：简历纸张 ============ -->
+    <section class="lg:col-span-7 w-full flex flex-col gap-3">
+      <!-- 标题行：与右侧问答面板的标题行对称，保证两栏上下边缘严格对齐 -->
+      <div class="flex items-center justify-between px-1" id="statusBar">
+        <div class="flex items-center gap-2">
+          <span id="resumeTitleRow" class="text-xs font-semibold text-zinc-800 tracking-tight">简历预览</span>
+          <span class="text-zinc-300">·</span>
+          <span id="statusText" class="text-xs text-zinc-400 hidden sm:inline"></span>
+        </div>
+      </div>
+      <div id="resumeCard" class="bg-white rounded-xl p-8 sm:p-10 border border-zinc-200/90 shadow-paper transition-all duration-200 overflow-y-auto lg:h-[calc(100vh_-_220px)] lg:min-h-[560px]">
+        <!-- 单栏版 -->
+        <div id="resumeSingle"></div>
+        <!-- 双栏版（初始隐藏） -->
+        <div id="resumeDouble" class="hidden"></div>
+      </div>
+    </section>
+
+    <!-- ============ 右：经历问答 ============ -->
+    <section id="agentSection" class="lg:col-span-5 w-full flex flex-col gap-3">
+      <div class="flex items-center justify-between px-1">
+        <div class="flex items-center gap-2">
+          <span id="agentTitleRow" class="text-xs font-semibold text-zinc-800 tracking-tight">经历与背景问答</span>
+          <span class="text-zinc-300">·</span>
+          <span id="agentSubtitle" class="text-xs text-zinc-400">AI 数字分身 · 基于真实履历作答</span>
+        </div>
+        <button class="text-xs text-zinc-400 hover:text-zinc-700 transition flex items-center gap-1" onclick="clearAgentChat()">
+          <svg class="w-3 h-3 text-zinc-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.75"></path>
+          </svg>
+          <span>重置对话</span>
+        </button>
+      </div>
+
+      <div class="bg-white rounded-xl border border-zinc-200/90 shadow-paper flex flex-col h-[640px] lg:h-[calc(100vh_-_220px)] lg:min-h-[560px] justify-between p-4 sm:p-5 relative" id="agentPanel">
+        <!-- 常见问答 -->
+        <div class="pb-3 border-b border-zinc-100">
+          <div class="flex items-center justify-between mb-2">
+            <span class="text-[10px] font-semibold tracking-wider text-zinc-400 uppercase">常见问答建议 / TOPICS</span>
+          </div>
+          <div class="flex flex-wrap gap-1.5" id="quickChips"></div>
+        </div>
+
+        <!-- 消息区 -->
+        <div class="flex-1 overflow-y-auto space-y-3.5 pr-1 py-3 text-xs" id="chatMessages"></div>
+
+        <!-- 输入区 -->
+        <div class="pt-3 border-t border-zinc-100">
+          <div class="relative bg-zinc-50/60 border focus-within:border-zinc-400 focus-within:bg-white transition-all rounded-xl border-zinc-200/90">
+            <textarea class="w-full text-xs text-zinc-800 placeholder-zinc-400 bg-transparent p-3 pr-10 focus:outline-none resize-none leading-relaxed rounded-xl" id="agentQueryInput" rows="2" placeholder="输入问题..." onkeydown="handleAgentInputKeyDown(event)"></textarea>
+            <div class="flex items-center justify-between px-3 pb-2.5 pt-0 text-[11px] text-zinc-400">
+              <span class="text-[10px] text-zinc-400">按 Enter 发送 · Shift + Enter 换行</span>
+              <button class="p-1.5 bg-zinc-900 hover:bg-zinc-800 text-white transition flex items-center justify-center rounded-lg disabled:opacity-40" id="sendMsgBtn" onclick="submitAgentChat()" title="发送">
+                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path d="M14 5l7 7m0 0l-7 7m7-7H3" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"></path>
+                </svg>
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+  </div>
+</main>
+
+<footer class="max-w-screen-2xl mx-auto px-4 sm:px-6 pb-10 pt-2 text-center">
+  <p id="footerText" class="text-[11px] text-zinc-400"></p>
+</footer>
+
+<script>
+/* ==================== 数据与配置（来自 resume_data.js，由管理后台维护） ==================== */
+const RD = window.RESUME_DATA || {};
+const KN = RD.knowledge || {};
+const B = KN.basic_info || {};
+const SITE = Object.assign({
+  page_title: '{name} · 个人主页 & AI 数字分身',
+  header_badge: 'HDW',
+  header_name: '',
+  header_subtitle: '个人履历与经历问答',
+  owner_avatar: '我',
+  visitor_avatar: '访',
+  agent_title_row: '经历与背景问答',
+  agent_subtitle: 'AI 数字分身 · 基于真实履历作答',
+  resume_title_row: '简历预览',
+  status_text: '',
+  welcome_title: '你好！',
+  welcome_text: '我是{name}的 AI 数字分身，可以回答关于项目经历、技术栈、实习经历与求职意向的问题。',
+  chat_placeholder: '输入你的问题...',
+  quick_questions: [],
+  footer_text: '{name}的个人主页 · 经历问答由 AI 数字分身实时生成，仅供交流参考'
+}, RD.site || {});
+const NAME = (B.name || '').trim() || SITE.header_name || '我';
+function tpl(s) { return String(s == null ? '' : s).replace(/\{name\}/g, NAME); }
+
+const API_BASE = (location.protocol === 'file:') ? 'http://localhost:8000' : window.location.origin;
+const HISTORY_LIMIT = 8;
+
+let history = [];
+let generating = false;
+
+const chatMessagesEl = document.getElementById('chatMessages');
+const inputEl = document.getElementById('agentQueryInput');
+const sendBtn = document.getElementById('sendMsgBtn');
+
+/* ==================== 工具 ==================== */
+function esc(s) {
+  return String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+}
+function arr(v) { return Array.isArray(v) ? v.filter(x => x != null && String(x).trim() !== '') : []; }
+function isText(v) { return typeof v === 'string' && v.trim() !== ''; }
+/* 列表项：若形如「标签：内容」，把标签加粗 */
+function bullet(item) {
+  const str = String(item).trim();
+  const m = str.match(/^([^：:]{1,16})[：:]\s*(.+)$/);
+  if (m) return '<li><strong class="font-medium text-zinc-800">' + esc(m[1]) + '：</strong>' + esc(m[2]) + '</li>';
+  return '<li>' + esc(str) + '</li>';
+}
+function bullets(list) { return arr(list).map(bullet).join(''); }
+function chips(list, cls) { return arr(list).map(x => '<span class="' + (cls || 'skill-chip') + '">' + esc(x) + '</span>').join(''); }
+function dateRange(a, b) { return [a, b].filter(isText).join(' - '); }
+
+/* GitHub 等外部链接：支持「显示名称 | URL」格式；未写名称时自动用域名路径显示；点击新窗口打开 */
+function normalizeLink(item) {
+  let name = '';
+  let url = String(item == null ? '' : item).trim();
+  const sep = url.indexOf('|');
+  if (sep !== -1) {
+    name = url.slice(0, sep).trim();
+    url = url.slice(sep + 1).trim();
+  }
+  if (!/^https?:\/\//i.test(url)) url = 'https://' + url;
+  if (!name) name = url.replace(/^https?:\/\/(www\.)?/i, '').replace(/\/+$/, '');
+  return { name: name, url: url };
+}
+function githubLinksHTML(prefix) {
+  const pre = prefix == null ? '🔗 ' : prefix;
+  return arr(B.github_repos).map(item => {
+    const l = normalizeLink(item);
+    return '<div>' + esc(pre) + '<a class="underline underline-offset-2 hover:text-zinc-600 break-all" href="' + esc(l.url) + '" target="_blank" rel="noopener noreferrer">' + esc(l.name) + '</a></div>';
+  }).join('');
+}
+
+/* ==================== 简历渲染 ==================== */
+function projectHTML(p, limit) {
+  const name = esc(p.name || '');
+  const role = isText(p.role) ? '<span class="font-normal text-zinc-500"> · ' + esc(p.role) + '</span>' : '';
+  const time = isText(p.time) ? '<span class="text-zinc-400 font-mono text-xs shrink-0 ml-3">' + esc(p.time) + '</span>' : '';
+  let items = [].concat(arr(p.responsibilities), arr(p.challenges), arr(p.optimizations));
+  if (limit) items = items.slice(0, limit);
+  const bg = isText(p.background) ? '<p class="mt-2 text-[11px] text-zinc-500 leading-relaxed">' + esc(p.background) + '</p>' : '';
+  const ul = items.length ? '<ul class="mt-2 space-y-1.5 text-xs text-zinc-600 leading-relaxed list-disc list-inside">' + bullets(items) + '</ul>' : '';
+  return '<div>'
+    + '<div class="flex items-baseline justify-between text-xs">'
+    + '<h4 class="font-semibold text-zinc-900">' + name + role + '</h4>' + time
+    + '</div>' + bg + ul + '</div>';
+}
+
+function internshipHTML(it, limit) {
+  const name = esc(it.company || '');
+  const role = isText(it.position) ? '<span class="font-normal text-zinc-500"> · ' + esc(it.position) + '</span>' : '';
+  const time = dateRange(it.start_time, it.end_time);
+  const timeHTML = time ? '<span class="text-zinc-400 font-mono text-xs shrink-0 ml-3">' + esc(time) + '</span>' : '';
+  let items = [].concat(arr(it.responsibilities), arr(it.achievements));
+  if (limit) items = items.slice(0, limit);
+  const ul = items.length ? '<ul class="mt-2 space-y-1.5 text-xs text-zinc-600 leading-relaxed list-disc list-inside">' + bullets(items) + '</ul>' : '';
+  return '<div>'
+    + '<div class="flex items-baseline justify-between text-xs">'
+    + '<h4 class="font-semibold text-zinc-900">' + name + role + '</h4>' + timeHTML
+    + '</div>' + ul + '</div>';
+}
+
+function educationHTML() {
+  return arr(B.education).map(e => {
+    const title = esc(e.school || '');
+    const sub = [e.major, e.degree].filter(isText).map(esc).join(' · ');
+    const time = dateRange(e.start_time, e.end_time);
+    const notes = [];
+    if (isText(e.gpa)) notes.push('成绩：' + esc(e.gpa));
+    if (arr(e.courses).length) notes.push('主修课程：' + esc(arr(e.courses).join('、')));
+    if (isText(e.extras)) notes.push(esc(e.extras));
+    return '<div class="flex items-baseline justify-between text-xs">'
+      + '<div><span class="font-semibold text-zinc-900">' + title + '</span>'
+      + (sub ? '<span class="text-zinc-600 ml-2">' + sub + '</span>' : '') + '</div>'
+      + (time ? '<span class="text-zinc-400 font-mono text-xs">' + esc(time) + '</span>' : '')
+      + '</div>'
+      + (notes.length ? '<p class="mt-2 text-[11px] text-zinc-500 leading-relaxed">' + notes.join('；') + '</p>' : '');
+  }).join('');
+}
+
+function certHTML() {
+  return arr(B.certificates).length
+    ? '<p class="mt-3 text-[11px] text-zinc-500"><span class="font-medium text-zinc-700">证书：</span>' + esc(arr(B.certificates).join(' · ')) + '</p>'
+    : '';
+}
+
+function trainingHTML() {
+  return arr(KN.training).map(t => {
+    const lines = [];
+    if (isText(t.content)) lines.push(esc(t.content));
+    if (isText(t.achievement)) lines.push('成果：' + esc(t.achievement));
+    return '<div>'
+      + '<div class="flex items-baseline justify-between text-xs"><h4 class="font-semibold text-zinc-900">' + esc(t.name || '') + '</h4>'
+      + (isText(t.time) ? '<span class="text-zinc-400 font-mono text-xs shrink-0 ml-3">' + esc(t.time) + '</span>' : '')
+      + '</div>'
+      + (isText(t.institution) ? '<p class="mt-1 text-[11px] text-zinc-500">' + esc(t.institution) + '</p>' : '')
+      + (lines.length ? '<ul class="mt-2 space-y-1.5 text-xs text-zinc-600 leading-relaxed list-disc list-inside"><li>' + lines.join('</li><li>') + '</li></ul>' : '')
+      + '</div>';
+  }).join('');
+}
+
+function competitionHTML() {
+  return arr(KN.competitions).map(c => {
+    const meta = arr([c.level, c.award]).join(' · ');
+    return '<div>'
+      + '<div class="flex items-baseline justify-between text-xs"><h4 class="font-semibold text-zinc-900">' + esc(c.name || '') + '</h4>'
+      + (isText(c.time) ? '<span class="text-zinc-400 font-mono text-xs shrink-0 ml-3">' + esc(c.time) + '</span>' : '')
+      + '</div>'
+      + (meta ? '<p class="mt-1 text-[11px] text-zinc-500">' + esc(meta) + '</p>' : '')
+      + (isText(c.description) ? '<ul class="mt-2 space-y-1.5 text-xs text-zinc-600 leading-relaxed list-disc list-inside"><li>' + esc(c.description) + '</li></ul>' : '')
+      + '</div>';
+  }).join('');
+}
+
+function section(title, inner, mb) {
+  if (!inner) return '';
+  return '<div class="' + (mb === false ? '' : 'mb-7') + '"><h3 class="section-title">' + esc(title) + '</h3>' + inner + '</div>';
+}
+
+function renderResumeSingle() {
+  const intent = B.job_intention || {};
+  const intentParts = [];
+  if (arr(intent.target_positions).length) intentParts.push('求职意向：' + arr(intent.target_positions).join('、'));
+  if (isText(intent.expected_city)) intentParts.push('期望城市：' + intent.expected_city);
+  if (isText(intent.expected_salary)) intentParts.push('期望薪资：' + intent.expected_salary);
+  if (isText(intent.available_time)) intentParts.push('到岗时间：' + intent.available_time);
+
+  const contactLines = [];
+  if (isText(B.location)) contactLines.push('📍 ' + esc(B.location));
+  if (isText(B.email)) contactLines.push('✉️ ' + esc(B.email));
+  const contactHTML = contactLines.map(l => '<div>' + l + '</div>').join('') + githubLinksHTML();
+
+  let html = '';
+  // 抬头
+  html += '<div class="mb-7">'
+    + '<div class="flex items-end justify-between flex-wrap gap-2 mb-3">'
+    + '<div><h1 class="text-2xl font-bold tracking-tight text-zinc-900">' + esc(NAME) + '</h1>'
+    + (intentParts.length ? '<p class="text-xs text-zinc-500 mt-1.5">' + esc(intentParts.join(' · ')) + '</p>' : '')
+    + '</div>'
+    + (contactHTML ? '<div class="text-[11px] text-zinc-400 font-mono text-right leading-relaxed">' + contactHTML + '</div>' : '')
+    + '</div>'
+    + (isText(KN.self_introduction) ? '<p class="text-xs text-zinc-600 leading-relaxed">' + esc(KN.self_introduction) + '</p>' : '')
+    + '</div>';
+  // 技能
+  if (arr(B.skills).length) html += section('专业技能 / Skills', '<div class="flex flex-wrap gap-1.5">' + chips(B.skills) + '</div>');
+  // 项目
+  if (arr(KN.projects).length) html += section('项目经历 / Projects', '<div class="space-y-5">' + arr(KN.projects).map(p => projectHTML(p)).join('') + '</div>');
+  // 实习
+  if (arr(KN.internships).length) html += section('实习经历 / Internship', '<div class="space-y-5">' + arr(KN.internships).map(it => internshipHTML(it)).join('') + '</div>');
+  // 实训
+  if (arr(KN.training).length) html += section('实训经历 / Training', '<div class="space-y-4">' + trainingHTML() + '</div>');
+  // 竞赛
+  if (arr(KN.competitions).length) html += section('竞赛经历 / Competitions', '<div class="space-y-4">' + competitionHTML() + '</div>');
+  // 教育
+  if (arr(B.education).length) html += section('教育背景 / Education', educationHTML() + certHTML(), false);
+
+  return html || '<div class="text-sm text-zinc-400 py-10 text-center">简历数据为空：请登录 <a class="underline" href="/admin">管理后台</a> 填写内容，或确认数据文件已生成。</div>';
+}
+
+function renderResumeDouble() {
+  const intent = B.job_intention || {};
+  const intentLine = arr([arr(intent.target_positions).join('、'), intent.expected_city, intent.expected_salary]).join(' · ');
+
+  // 侧栏
+  let side = '<h1 class="text-xl font-bold tracking-tight text-zinc-900">' + esc(NAME) + '</h1>';
+  if (isText(intentLine)) side += '<p class="text-[11px] text-zinc-500 mt-1">' + esc(intentLine) + '</p>';
+  const cl = [];
+  if (isText(B.location)) cl.push('📍 ' + esc(B.location));
+  if (isText(B.email)) cl.push('✉️ ' + esc(B.email));
+  const ghHTML = githubLinksHTML();
+  const eduCl = [];
+  arr(B.education).forEach(e => { if (isText(e.school)) eduCl.push('🎓 ' + esc(e.school)); });
+  if (cl.length || ghHTML || eduCl.length) {
+    side += '<div class="mt-4 space-y-1.5 text-[11px] text-zinc-500 font-mono leading-relaxed">'
+      + cl.map(x => '<div>' + x + '</div>').join('')
+      + ghHTML
+      + eduCl.map(x => '<div>' + x + '</div>').join('')
+      + '</div>';
+  }
+  if (arr(B.skills).length) side += '<h3 class="section-title mt-6">核心技能</h3><div class="flex flex-wrap gap-1.5">' + chips(B.skills) + '</div>';
+  if (arr(B.education).length) {
+    side += '<h3 class="section-title mt-6">教育背景</h3>' + arr(B.education).map(e =>
+      '<p class="text-xs text-zinc-700 font-medium">' + esc(e.school || '') + '</p>'
+      + '<p class="text-[11px] text-zinc-500 mt-0.5">' + esc([e.major, e.degree].filter(isText).join(' · ')) + '</p>'
+      + (dateRange(e.start_time, e.end_time) ? '<p class="text-[11px] text-zinc-400 font-mono mt-0.5">' + esc(dateRange(e.start_time, e.end_time)) + '</p>' : '')
+    ).join('');
+  }
+  if (arr(B.certificates).length) side += '<h3 class="section-title mt-6">证书</h3><p class="text-[11px] text-zinc-500">' + esc(arr(B.certificates).join(' · ')) + '</p>';
+
+  // 主栏
+  let mainCol = '';
+  if (isText(KN.self_introduction)) mainCol += '<h3 class="section-title">个人概述</h3><p class="text-xs text-zinc-600 leading-relaxed mb-6">' + esc(KN.self_introduction) + '</p>';
+  if (arr(KN.projects).length) mainCol += '<h3 class="section-title">项目经历</h3><div class="space-y-4 mb-6">' + arr(KN.projects).map(p => projectHTML(p, 4)).join('') + '</div>';
+  if (arr(KN.internships).length) mainCol += '<h3 class="section-title">实习经历</h3><div class="space-y-4">' + arr(KN.internships).map(it => internshipHTML(it, 3)).join('') + '</div>';
+
+  return '<div class="grid grid-cols-12 gap-x-6">'
+    + '<aside class="col-span-4 border-r border-zinc-100 pr-5">' + side + '</aside>'
+    + '<div class="col-span-8">' + (mainCol || '<p class="text-xs text-zinc-400">暂无内容</p>') + '</div>'
+    + '</div>';
+}
+
+/* ==================== 页面配置渲染 ==================== */
+/* Logo 加载失败时回退为文字徽标 */
+function logoFallback() {
+  const img = document.getElementById('brandLogo');
+  if (img) img.classList.add('hidden');
+  const badge = document.getElementById('brandBadge');
+  if (badge) { badge.classList.remove('hidden'); badge.classList.add('flex'); }
+}
+
+function renderPageConfig() {
+  document.title = tpl(SITE.page_title);
+  const setText = (id, v) => { const el = document.getElementById(id); if (el) el.textContent = tpl(v); };
+  setText('brandBadge', SITE.header_badge);
+  // 顶栏 Logo（http 用绝对路径，file:// 双击打开用相对路径；尺寸已写死在图片属性上，防样式失效时撑爆布局）
+  const logoEl = document.getElementById('brandLogo');
+  if (logoEl) logoEl.src = (location.protocol === 'file:') ? 'vendor/logo.svg' : '/static/vendor/logo.svg';
+  setText('brandName', SITE.header_name || NAME);
+  setText('brandSubtitle', SITE.header_subtitle);
+  setText('resumeTitleRow', SITE.resume_title_row);
+  setText('statusText', SITE.status_text);
+  setText('agentTitleRow', SITE.agent_title_row);
+  setText('agentSubtitle', SITE.agent_subtitle);
+  setText('footerText', SITE.footer_text);
+  inputEl.placeholder = tpl(SITE.chat_placeholder);
+
+  // 快捷问题
+  const wrap = document.getElementById('quickChips');
+  wrap.innerHTML = '';
+  arr(SITE.quick_questions).slice(0, 6).forEach(q => {
+    const btn = document.createElement('button');
+    btn.className = 'topic-chip';
+    btn.textContent = q;
+    btn.addEventListener('click', () => quickAsk(q));
+    wrap.appendChild(btn);
+  });
+
+  document.getElementById('resumeSingle').innerHTML = renderResumeSingle();
+  document.getElementById('resumeDouble').innerHTML = renderResumeDouble();
+}
+
+/* ==================== 欢迎消息 ==================== */
+function renderWelcome() {
+  const wrap = document.createElement('div');
+  wrap.className = 'flex items-start gap-2.5 chat-msg';
+  wrap.innerHTML = '<div class="w-6 h-6 rounded-md bg-zinc-900 text-white flex items-center justify-center shrink-0 text-[10px] font-mono font-medium shadow-sm"></div>'
+    + '<div class="flex-1 bg-zinc-50 border border-zinc-200/60 rounded-lg p-3 text-zinc-700 leading-relaxed">'
+    + '<p class="text-xs font-semibold text-zinc-900 mb-1"></p>'
+    + '<p class="text-zinc-600 text-[11px] leading-relaxed"></p>'
+    + '</div>';
+  wrap.querySelector('.bg-zinc-900').textContent = SITE.owner_avatar;
+  const ps = wrap.querySelectorAll('p');
+  ps[0].textContent = tpl(SITE.welcome_title);
+  ps[1].textContent = tpl(SITE.welcome_text);
+  chatMessagesEl.innerHTML = '';
+  chatMessagesEl.appendChild(wrap);
+}
+
+function scrollChat() { chatMessagesEl.scrollTop = chatMessagesEl.scrollHeight; }
+function nearBottom() {
+  return chatMessagesEl.scrollHeight - chatMessagesEl.scrollTop - chatMessagesEl.clientHeight < 120;
+}
+
+/* ==================== 消息渲染 ==================== */
+function appendUserMsg(text) {
+  const row = document.createElement('div');
+  row.className = 'flex items-start justify-end gap-2 chat-msg';
+  const bubble = document.createElement('div');
+  bubble.className = 'bg-zinc-100 text-zinc-800 border border-zinc-200/60 rounded-lg p-3 text-xs leading-relaxed max-w-[85%]';
+  bubble.style.whiteSpace = 'pre-wrap';
+  bubble.textContent = text;
+  const avatar = document.createElement('div');
+  avatar.className = 'w-6 h-6 rounded-md bg-zinc-200 text-zinc-700 flex items-center justify-center shrink-0 text-[10px] font-medium font-mono';
+  avatar.textContent = SITE.visitor_avatar;
+  row.appendChild(bubble);
+  row.appendChild(avatar);
+  chatMessagesEl.appendChild(row);
+  scrollChat();
+}
+
+function createAssistantBubble(loading) {
+  const row = document.createElement('div');
+  row.className = 'flex items-start gap-2.5 chat-msg';
+  const avatar = document.createElement('div');
+  avatar.className = 'w-6 h-6 rounded-md bg-zinc-900 text-white flex items-center justify-center shrink-0 text-[10px] font-mono font-medium shadow-sm';
+  avatar.textContent = SITE.owner_avatar;
+  const bubble = document.createElement('div');
+  bubble.className = 'flex-1 bg-zinc-50 border border-zinc-200/60 rounded-lg p-3 text-zinc-700 leading-relaxed text-xs';
+  bubble.style.whiteSpace = 'pre-wrap';
+  if (loading) {
+    bubble.innerHTML = '<div class="loading-dots flex items-center gap-1 py-0.5"><span></span><span></span><span></span></div>';
+  }
+  row.appendChild(avatar);
+  row.appendChild(bubble);
+  chatMessagesEl.appendChild(row);
+  scrollChat();
+  return bubble;
+}
+
+function setBusy(busy) {
+  generating = busy;
+  sendBtn.disabled = busy;
+  inputEl.disabled = busy;
+  if (!busy) inputEl.focus();
+}
+
+/* ==================== 流式请求（SSE） ==================== */
+async function streamChat(query, onDelta) {
+  const res = await fetch(API_BASE + '/agent/chat/stream', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ query: query, history: history.slice(-HISTORY_LIMIT) })
+  });
+  if (!res.ok) {
+    let detail = 'HTTP ' + res.status;
+    try { const j = await res.json(); detail = j.detail || detail; } catch (e) {}
+    const err = new Error(detail);
+    err.appLevel = true;
+    throw err;
+  }
+  if (!res.body) throw new Error('当前浏览器不支持流式读取');
+
+  const reader = res.body.getReader();
+  const decoder = new TextDecoder('utf-8');
+  let buffer = '';
+  let text = '';
+  let errored = null;
+
+  while (true) {
+    const { done, value } = await reader.read();
+    if (done) break;
+    buffer += decoder.decode(value, { stream: true });
+    let idx;
+    while ((idx = buffer.indexOf('\n\n')) !== -1) {
+      const frame = buffer.slice(0, idx);
+      buffer = buffer.slice(idx + 2);
+      let evt = 'message', data = '';
+      for (const line of frame.split('\n')) {
+        if (line.startsWith('event:')) evt = line.slice(6).trim();
+        else if (line.startsWith('data:')) data += line.slice(5).trim();
+      }
+      if (!data || data === '[DONE]') continue;
+      let obj;
+      try { obj = JSON.parse(data); } catch (e) { continue; }
+      if (evt === 'delta' && obj.content) { text += obj.content; onDelta(obj.content); }
+      else if (evt === 'error') { errored = obj.message || '服务异常'; }
+    }
+  }
+  return { text, errored, gotDelta: !!text };
+}
+
+/* ==================== 发送消息 ==================== */
+async function submitAgentChat() {
+  if (generating) return;
+  const query = (inputEl.value || '').trim();
+  if (!query) return;
+
+  inputEl.value = '';
+  appendUserMsg(query);
+  const bubbleEl = createAssistantBubble(true);
+  setBusy(true);
+
+  let replyText = '';
+  let textNode = null;
+  let cursorEl = null;
+  let failed = false;
+
+  const beginStreaming = () => {
+    if (textNode) return;
+    bubbleEl.innerHTML = '';
+    textNode = document.createTextNode('');
+    cursorEl = document.createElement('span');
+    cursorEl.className = 'type-cursor';
+    bubbleEl.appendChild(textNode);
+    bubbleEl.appendChild(cursorEl);
+  };
+
+  const showError = (msg) => {
+    failed = true;
+    const partial = textNode ? textNode.data : '';
+    bubbleEl.textContent = partial ? partial + '\n\n【服务提示】' + msg : msg;
+    bubbleEl.classList.add('error-note');
+    scrollChat();
+  };
+
+  try {
+    const r = await streamChat(query, (chunk) => {
+      beginStreaming();
+      const stick = nearBottom();
+      replyText += chunk;
+      textNode.appendData(chunk);
+      if (stick) scrollChat();
+    });
+    if (r.errored) {
+      showError(r.errored);
+    } else if (!r.gotDelta) {
+      throw new Error('empty stream');
+    }
+  } catch (e) {
+    if (e && e.appLevel) {
+      showError(e.message || '服务暂不可用，请稍后重试');
+    } else {
+      try {
+        const res = await fetch(API_BASE + '/agent/chat', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ query: query, history: history.slice(-HISTORY_LIMIT) })
+        });
+        const j = await res.json().catch(() => ({}));
+        if (!res.ok) {
+          showError(j.detail || '抱歉，服务暂时不可用，请稍后重试。');
+        } else {
+          replyText = j.reply || '';
+          if (!replyText) {
+            showError('抱歉，没有收到有效回复，请稍后重试。');
+          } else {
+            beginStreaming();
+            textNode.data = replyText;
+          }
+        }
+      } catch (e2) {
+        showError('抱歉，网络异常，服务暂时不可用，请稍后重试。');
+      }
+    }
+  }
+
+  if (cursorEl && cursorEl.parentNode) cursorEl.remove();
+  if (!failed && replyText) {
+    history.push({ role: 'user', content: query });
+    history.push({ role: 'assistant', content: replyText });
+    if (history.length > HISTORY_LIMIT * 2) history.splice(0, history.length - HISTORY_LIMIT * 2);
+    scrollChat();
+  }
+  setBusy(false);
+}
+
+/* ==================== 快捷提问 / 重置 ==================== */
+function quickAsk(text) {
+  if (generating) return;
+  inputEl.value = text;
+  submitAgentChat();
+}
+
+function clearAgentChat() {
+  if (generating) return;
+  if (!confirm('确定清空当前对话并重新开始吗？')) return;
+  history = [];
+  renderWelcome();
+  inputEl.focus();
+}
+
+function handleAgentInputKeyDown(event) {
+  if (event.key === 'Enter' && !event.shiftKey && !event.isComposing) {
+    event.preventDefault();
+    submitAgentChat();
+  }
+}
+
+/* ==================== 单栏 / 双栏切换 ==================== */
+function switchLayoutMode(mode) {
+  const single = document.getElementById('resumeSingle');
+  const dbl = document.getElementById('resumeDouble');
+  const btnS = document.getElementById('btn-single-col');
+  const btnD = document.getElementById('btn-double-col');
+  if (mode === 'double') {
+    single.classList.add('hidden');
+    dbl.classList.remove('hidden');
+    btnS.className = 'text-xs text-zinc-400 hover:text-zinc-700 transition font-normal';
+    btnD.className = 'text-xs text-zinc-900 font-medium transition';
+  } else {
+    dbl.classList.add('hidden');
+    single.classList.remove('hidden');
+    btnS.className = 'text-xs text-zinc-900 font-medium transition';
+    btnD.className = 'text-xs text-zinc-400 hover:text-zinc-700 transition font-normal';
+  }
+}
+
+/* ==================== 导出 PDF / 复制邮箱 / 提示 ==================== */
+function exportPDF() {
+  showToast('已打开打印窗口，在「目标打印机」中选择「另存为 PDF」即可');
+  setTimeout(() => window.print(), 400);
+}
+
+function copyContact() {
+  const email = (B.email || '').trim();
+  if (!email) { showToast('暂未填写联系邮箱'); return; }
+  const done = () => showToast('已复制邮箱：' + email + '，欢迎联系');
+  const fallback = () => {
+    const ta = document.createElement('textarea');
+    ta.value = email;
+    ta.style.position = 'fixed';
+    ta.style.opacity = '0';
+    document.body.appendChild(ta);
+    ta.select();
+    try { document.execCommand('copy'); done(); }
+    catch (e) { showToast('复制失败，请手动复制：' + email); }
+    ta.remove();
+  };
+  if (navigator.clipboard && window.isSecureContext) {
+    navigator.clipboard.writeText(email).then(done).catch(fallback);
+  } else {
+    fallback();
+  }
+}
+
+let toastTimer = null;
+function showToast(msg) {
+  const toast = document.getElementById('toast');
+  document.getElementById('toastText').textContent = msg;
+  toast.classList.remove('hidden');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => toast.classList.add('hidden'), 2600);
+}
+
+/* ==================== 初始化 ==================== */
+renderPageConfig();
+renderWelcome();
+</script>
+</body>
+</html>

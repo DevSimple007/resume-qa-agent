@@ -1,0 +1,33 @@
+# 虚拟环境
+venv/
+
+# Python缓存
+__pycache__/
+*.pyc
+
+# 环境变量（包含API密钥）
+.env
+
+# 本地模型缓存（约90MB，不入库）
+bge_model/
+
+# Playwright临时文件
+.playwright-mcp/
+
+# 测试文件
+test.json
+
+# 数据备份（管理后台自动生成的上一版备份）
+*.backup.json
+
+# WorkBuddy 工作区数据（本地开发记录，不入库）
+.workbuddy/
+
+# 个人知识库（含手机号、邮箱、住址等隐私，本地保留不入库）
+person_knowledge.json
+
+# 站点配置（含个人履历信息）
+site_config.json
+
+# 前端简历数据（自动生成，含个人履历）
+static/resume_data.js
